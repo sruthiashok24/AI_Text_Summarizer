@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Text Summarizer - Frontend</title>
+    <style>
+      body { font-family: Arial, sans-serif; max-width:800px; margin:24px auto; }
+      textarea { width:100%; height:200px; }
+      #summary { white-space:pre-wrap; background:#f6f6f6; padding:12px; border-radius:6px; }
+    </style>
+  </head>
+  <body>
+    <h1>AI Text Summarizer</h1>
+    <p>Paste text below and click <strong>Summarize</strong>.</p>
+    <textarea id="inputText" placeholder="Paste article or paragraph here..."></textarea>
+    <div style="margin-top:8px;">
+      <button id="summarizeBtn">Summarize</button>
+    </div>
+    <h2>Summary</h2>
+    <div id="summary">(results appear here)</div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
