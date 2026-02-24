@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Summarizer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: #1e293b;
+            padding: 40px;
+            border-radius: 16px;
+            width: 700px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #7c3aed;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 16px;
+            color: #e2e8f0;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+        }
+        textarea:focus { border-color: #7c3aed; }
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 16px;
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover { background: #6d28d9; }
+        button:disabled { background: #4c1d95; cursor: not-allowed; }
+        .result {
+            margin-top: 24px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 16px;
+            display: none;
+        }
+        .result h3 { color: #7c3aed; margin-bottom: 10px; }
+        .result p { line-height: 1.7; color: #cbd5e1; font-size: 14px; }
+        .loader {
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+            color: #7c3aed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Text Summarizer</h1>
+        <p class="subtitle">Paste any long text and get a concise summary instantly</p>
+        <textarea id="inputText" placeholder="Paste your long text here..."></textarea>
+        <button id="summarizeBtn" onclick="summarize()">Summarize</button>
+        <div class="loader" id="loader">⏳ Summarizing...</div>
+        <div class="result" id="result">
+            <h3>📝 Summary</h3>
+            <p id="summaryText"></p>
+        </div>
+    </div>
+
+    <script>
+        async function summarize() {
+            const text = document.getElementById('inputText').value.trim();
+            if (!text) { alert('Please enter some text!'); return; }
+
+            const btn = document.getElementById('summarizeBtn');
+            const loader = document.getElementById('loader');
+            const result = document.getElementById('result');
+            const summaryText = document.getElementById('summaryText');
+
+            btn.disabled = true;
+            loader.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                const response = await fetch('/summarize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await response.json();
+                summaryText.textContent = data.summary;
+                result.style.display = 'block';
+            } catch (error) {
+                alert('Error! Please try again.');
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
