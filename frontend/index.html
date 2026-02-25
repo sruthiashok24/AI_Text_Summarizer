@@ -47,6 +47,8 @@
             outline: none;
         }
         textarea:focus { border-color: #7c3aed; }
+
+        /* ── ISSUE 1 FIX: button layout to hold spinner + text ── */
         button {
             width: 100%;
             padding: 14px;
@@ -58,9 +60,33 @@
             font-size: 16px;
             cursor: pointer;
             transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-        button:hover { background: #6d28d9; }
-        button:disabled { background: #4c1d95; cursor: not-allowed; }
+        button:hover:not(:disabled) { background: #6d28d9; }
+        button:disabled {
+            background: #4c1d95;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* ── ISSUE 1 FIX: spinner animation ── */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;           /* hidden by default */
+            flex-shrink: 0;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         .result {
             margin-top: 24px;
             background: #0f172a;
@@ -71,11 +97,14 @@
         }
         .result h3 { color: #7c3aed; margin-bottom: 10px; }
         .result p { line-height: 1.7; color: #cbd5e1; font-size: 14px; }
+
+        /* ── ISSUE 1 FIX: loader text style (replaces old .loader) ── */
         .loader {
             text-align: center;
-            margin-top: 20px;
-            display: none;
-            color: #7c3aed;
+            margin-top: 16px;
+            display: none;           /* hidden by default */
+            color: #a78bfa;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -83,9 +112,18 @@
     <div class="container">
         <h1>🤖 AI Text Summarizer</h1>
         <p class="subtitle">Paste any long text and get a concise summary instantly</p>
+
         <textarea id="inputText" placeholder="Paste your long text here..."></textarea>
-        <button id="summarizeBtn" onclick="summarize()">Summarize</button>
-        <div class="loader" id="loader">⏳ Summarizing...</div>
+
+        <!-- ISSUE 1 FIX: spinner inside button + label span -->
+        <button id="summarizeBtn" onclick="summarize()">
+            <div class="spinner" id="spinner"></div>
+            <span id="btnLabel">✨ Summarize</span>
+        </button>
+
+        <!-- ISSUE 1 FIX: supporting status text below button -->
+        <div class="loader" id="loader">Analyzing your text, please wait…</div>
+
         <div class="result" id="result">
             <h3>📝 Summary</h3>
             <p id="summaryText"></p>
@@ -97,14 +135,19 @@
             const text = document.getElementById('inputText').value.trim();
             if (!text) { alert('Please enter some text!'); return; }
 
-            const btn = document.getElementById('summarizeBtn');
-            const loader = document.getElementById('loader');
-            const result = document.getElementById('result');
+            const btn      = document.getElementById('summarizeBtn');
+            const spinner  = document.getElementById('spinner');
+            const btnLabel = document.getElementById('btnLabel');
+            const loader   = document.getElementById('loader');
+            const result   = document.getElementById('result');
             const summaryText = document.getElementById('summaryText');
 
-            btn.disabled = true;
-            loader.style.display = 'block';
-            result.style.display = 'none';
+            // ── ISSUE 1 FIX: show spinner, disable button, show loader text ──
+            btn.disabled            = true;
+            spinner.style.display   = 'block';
+            btnLabel.textContent    = 'Summarizing…';
+            loader.style.display    = 'block';
+            result.style.display    = 'none';
 
             try {
                 const response = await fetch('/summarize', {
@@ -118,8 +161,11 @@
             } catch (error) {
                 alert('Error! Please try again.');
             } finally {
-                btn.disabled = false;
-                loader.style.display = 'none';
+                // ── ISSUE 1 FIX: always restore button & hide loader ──
+                btn.disabled            = false;
+                spinner.style.display   = 'none';
+                btnLabel.textContent    = '✨ Summarize';
+                loader.style.display    = 'none';   // disappears once result is shown
             }
         }
     </script>
