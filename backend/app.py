@@ -14,7 +14,7 @@ GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL = "llama-3.1-8b-instant"
 
 
-def groq_chat(prompt: str) -> str:
+def call_llama(prompt: str) -> str:
     """Send a prompt to Groq and return the reply text."""
     headers = {
         "Authorization": f"Bearer {API_KEY}",
@@ -54,24 +54,24 @@ STYLE_PROMPTS = {
 
 @app.route("/summarize", methods=["POST"])
 def summarize():
-    data = request.get_json()
-    text = data.get("text", "").strip()
+    data = request.json
+    text = data.get("text", "")
     style = data.get("style", "concise")
     language = data.get("language", "English")
 
-    if not text:
-        return jsonify({"error": "No text provided"}), 400
+    prompt = f"""
+Summarize the following text.
 
-    style_instruction = STYLE_PROMPTS.get(style, STYLE_PROMPTS["concise"])
-    lang_instruction = f"\n\nIMPORTANT: Respond entirely in {language}." if language != "English" else ""
+Style: {style}
+Language: {language}
 
-    prompt = f"{style_instruction}\n\n{text}{lang_instruction}"
+Text:
+{text}
+"""
 
-    try:
-        summary = groq_chat(prompt)
-        return jsonify({"summary": summary})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    summary = call_llama(prompt)
+
+    return jsonify({"summary": summary})
 
 
 # ── ANALYZE ─────────────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ def analyze():
     prompt = f"{instruction}\n\n{text}"
 
     try:
-        result = groq_chat(prompt)
+        result = call_llama(prompt)
         return jsonify({"result": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -130,7 +130,7 @@ def compare():
 {text_b}"""
 
     try:
-        result = groq_chat(prompt)
+        result = call_llama(prompt)
         return jsonify({"result": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

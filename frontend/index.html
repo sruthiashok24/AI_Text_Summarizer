@@ -616,9 +616,10 @@ textarea:focus, input:focus {
         <div class="result-header">
           <div class="result-label">Summary Output</div>
           <div class="result-actions">
-            <div class="compression-badge" id="compressionBadge">⚡ 0% compression</div>
-            <button class="btn-secondary" onclick="copyResult('sumOutput')">Copy</button>
-          </div>
+  <div class="compression-badge" id="compressionBadge">⚡ 0% compression</div>
+  <button class="btn-secondary" onclick="copyResult('sumOutput')">Copy</button>
+  <button class="btn-secondary" onclick="downloadResult('sumOutput')">Download</button>
+  </div>
         </div>
         <div class="result-body" id="sumOutput"></div>
       </div>
@@ -714,7 +715,7 @@ textarea:focus, input:focus {
 
 <script>
 const API = 'http://127.0.0.1:5000';
-let history = [];
+let history = JSON.parse(localStorage.getItem("history") || "[]");
 
 // ── CHIP SELECTION ──
 document.querySelectorAll('.options-row').forEach(row => {
@@ -846,8 +847,17 @@ async function doCompare() {
 
 // ── HISTORY ──
 function addHistory(type, input, output, meta) {
-  history.unshift({ type, input: input.slice(0, 100), output, meta, ts: Date.now() });
+  history.unshift({
+    type,
+    input: input.slice(0, 100),
+    output,
+    meta,
+    ts: Date.now()
+  });
+
   if (history.length > 20) history.pop();
+
+  localStorage.setItem("history", JSON.stringify(history));
 }
 
 function renderHistory() {
@@ -888,8 +898,12 @@ function loadHistory(i) {
   }
 }
 
-function clearHistory() { history = []; renderHistory(); showToast('History cleared'); }
-
+function clearHistory() {
+  history = [];
+  localStorage.removeItem("history");
+  renderHistory();
+  showToast("History cleared");
+}
 // ── UTILS ──
 function copyResult(id) {
   navigator.clipboard.writeText(document.getElementById(id).textContent);
@@ -902,6 +916,27 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
+function downloadResult(id) {
+  const text = document.getElementById(id).textContent;
+
+  if (!text) {
+    showToast("Nothing to download");
+    return;
+  }
+
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "summary.txt";
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+  showToast("Downloaded successfully");
+}
+renderHistory();
 </script>
 </body>
 </html>
