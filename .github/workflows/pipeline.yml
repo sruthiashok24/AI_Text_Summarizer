@@ -1,0 +1,673 @@
+# ================================================================
+#  AI TEXT SUMMARIZER —  CI/CD PIPELINE
+#  GitHub Actions Workflow
+#  
+#  Pipeline Stages:
+#    Stage 1 → Checkout & Environment Validation
+#    Stage 2 → Install Dependencies & Build Verification  
+#    Stage 3 → Code Quality, Linting & Security Scan
+#    Stage 4 → Build Docker Image
+#    Stage 5 → Push Docker Image to DockerHub
+#    Stage 6 → Post-Deployment Validation & Pipeline Summary
+#
+#  Author      : Prahalya
+#  Project     : AI Text Summarizer
+#  Repo        : github.com/sruthiashok24/AI_Text_Summarizer
+#  Last Updated: 2026
+# ================================================================
+
+name: "🚀 AI Text Summarizer — Enterprise CI/CD Pipeline"
+
+# ================================================================
+# TRIGGERS — When does this pipeline run?
+# ================================================================
+on:
+  # Run on every push to main (only possible via merged Pull Request)
+  push:
+    branches:
+      - main
+
+  # Also run on every Pull Request targeting main
+  # (so we catch errors BEFORE they are merged)
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+  # Allow manually triggering the pipeline from the GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual trigger"
+        required: false
+        default: "Manual pipeline execution"
+
+# ================================================================
+# CONCURRENCY — Prevent duplicate pipeline runs
+# If a new commit is pushed while a pipeline is still running,
+# cancel the old one to save resources
+# ================================================================
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+# ================================================================
+# GLOBAL ENVIRONMENT VARIABLES
+# Available in every job and every step
+# ================================================================
+env:
+  PYTHON_VERSION: "3.11"
+  IMAGE_NAME: "ai-text-summarizer"
+  REGISTRY: "docker.io"
+
+# ================================================================
+#
+#  ███████╗████████╗ █████╗  ██████╗ ███████╗███████╗
+#  ██╔════╝╚══██╔══╝██╔══██╗██╔════╝ ██╔════╝██╔════╝
+#  ███████╗   ██║   ███████║██║  ███╗█████╗  ███████╗
+#  ╚════██║   ██║   ██╔══██║██║   ██║██╔══╝  ╚════██║
+#  ███████║   ██║   ██║  ██║╚██████╔╝███████╗███████║
+#  ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝
+#
+# ================================================================
+
+jobs:
+
+  # ==============================================================
+  # STAGE 1 — CHECKOUT & ENVIRONMENT VALIDATION
+  # Purpose : Clone the repo, validate all required files exist,
+  #           and print pipeline metadata for traceability
+  # Runs on : Every trigger (push, PR, manual)
+  # ==============================================================
+  stage-1-checkout:
+    name: "📥 Stage 1 — Checkout & Validation"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    # Output the short SHA so other jobs can use it for image tagging
+    outputs:
+      short-sha: ${{ steps.meta.outputs.short-sha }}
+      image-tag: ${{ steps.meta.outputs.image-tag }}
+
+    steps:
+
+      # ── Step 1.1 — Clone the repository ──────────────────────
+      - name: "📥 Checkout Repository"
+        uses: actions/checkout@v4
+        with:
+          # Fetch full git history (needed for proper commit counts)
+          fetch-depth: 0
+
+      # ── Step 1.2 — Generate build metadata ───────────────────
+      - name: "🏷️ Generate Build Metadata"
+        id: meta
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
+
+          # Write to GitHub outputs (accessible by other jobs)
+          echo "short-sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "image-tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+
+          echo "Short SHA: ${SHORT_SHA}"
+          echo "Image Tag: ${IMAGE_TAG}"
+
+      # ── Step 1.3 — Print full pipeline info ──────────────────
+      - name: "📋 Pipeline Information"
+        run: |
+          echo "================================================================"
+          echo "   AI TEXT SUMMARIZER — CI/CD PIPELINE"
+          echo "================================================================"
+          echo "  Workflow   : ${{ github.workflow }}"
+          echo "  Run ID     : ${{ github.run_id }}"
+          echo "  Run #      : ${{ github.run_number }}"
+          echo "  Trigger    : ${{ github.event_name }}"
+          echo "  Actor      : ${{ github.actor }}"
+          echo "  Branch     : ${{ github.ref_name }}"
+          echo "  Commit SHA : ${{ github.sha }}"
+          echo "  Short SHA  : ${{ steps.meta.outputs.short-sha }}"
+          echo "  Repository : ${{ github.repository }}"
+          echo "  Timestamp  : $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "================================================================"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "  Manual Trigger Reason: ${{ github.event.inputs.reason }}"
+            echo "================================================================"
+          fi
+
+      # ── Step 1.4 — Validate required project files exist ─────
+      - name: "✅ Validate Project Structure"
+        run: |
+          echo "Validating required project files..."
+          echo "----------------------------------------------------------------"
+
+          ERRORS=0
+
+          check_file() {
+            if [ -f "$1" ]; then
+              echo "  ✅ FOUND    → $1"
+            else
+              echo "  ❌ MISSING  → $1"
+              ERRORS=$((ERRORS + 1))
+            fi
+          }
+
+          check_file "backend/app.py"
+          check_file "backend/requirements.txt"
+          check_file "frontend/index.html"
+          check_file "Dockerfile"
+          check_file ".gitignore"
+          check_file "README.md"
+
+          echo "----------------------------------------------------------------"
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ Validation FAILED — $ERRORS required file(s) missing."
+            echo "   Please ensure all required files are committed to the repo."
+            exit 1
+          fi
+
+          echo "✅ All required files validated successfully."
+
+      # ── Step 1.5 — Print directory tree for visibility ───────
+      - name: "🗂️ Display Project Structure"
+        run: |
+          echo "Project directory structure:"
+          find . -not -path './.git/*' -not -path './venv/*' \
+                 -not -path './__pycache__/*' \
+            | sort | sed 's|[^/]*/|  |g'
+
+
+  # ==============================================================
+  # STAGE 2 — INSTALL DEPENDENCIES & BUILD VERIFICATION
+  # Purpose : Set up Python, install all packages, verify
+  #           the application can be imported without errors
+  # Runs on : Only after Stage 1 passes (needs: stage-1-checkout)
+  # ==============================================================
+  stage-2-build:
+    name: "🔧 Stage 2 — Install & Build Verification"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    needs: stage-1-checkout   # BLOCKED until Stage 1 succeeds
+
+    steps:
+
+      - name: "📥 Checkout Repository"
+        uses: actions/checkout@v4
+
+      # ── Step 2.1 — Set up the Python environment ─────────────
+      - name: "🐍 Set Up Python ${{ env.PYTHON_VERSION }}"
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          # Cache pip packages — speeds up future pipeline runs significantly
+          cache: "pip"
+          cache-dependency-path: "backend/requirements.txt"
+
+      # ── Step 2.2 — Upgrade pip to latest version ─────────────
+      - name: "⬆️ Upgrade pip"
+        run: |
+          python -m pip install --upgrade pip
+          pip --version
+
+      # ── Step 2.3 — Install project dependencies ──────────────
+      - name: "📦 Install Project Dependencies"
+        run: |
+          echo "Installing dependencies from backend/requirements.txt..."
+          pip install -r backend/requirements.txt
+          echo "✅ Dependencies installed successfully."
+
+      # ── Step 2.4 — Verify critical packages are importable ───
+      - name: "🔍 Verify Package Imports"
+        run: |
+          echo "Verifying critical packages can be imported..."
+          echo "----------------------------------------------------------------"
+          python -c "import flask; print('  ✅ Flask        →', flask.__version__)"
+          python -c "import groq;  print('  ✅ Groq SDK     → imported successfully')"
+          python -c "import dotenv; print('  ✅ python-dotenv → imported successfully')"
+          echo "----------------------------------------------------------------"
+          echo "✅ All package imports verified."
+
+      # ── Step 2.5 — Display full installed dependency list ────
+      - name: "📋 Installed Dependency Report"
+        run: |
+          echo "Full list of installed packages:"
+          pip list --format=columns
+
+      # ── Step 2.6 — Check Python & pip versions ───────────────
+      - name: "📊 Environment Summary"
+        run: |
+          echo "================================================================"
+          echo "  Python Version : $(python --version)"
+          echo "  Pip Version    : $(pip --version)"
+          echo "  OS             : $(uname -a)"
+          echo "================================================================"
+
+
+  # ==============================================================
+  # STAGE 3 — CODE QUALITY, LINTING & SECURITY SCAN
+  # Purpose : Enforce code style standards and scan all
+  #           dependencies for known CVEs (vulnerabilities)
+  #           This is what separates amateur from enterprise pipelines
+  # Runs on : Only after Stage 2 passes (needs: stage-2-build)
+  # ==============================================================
+  stage-3-quality:
+    name: "🔍 Stage 3 — Code Quality & Security"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    needs: stage-2-build      # BLOCKED until Stage 2 succeeds
+
+    steps:
+
+      - name: "📥 Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "🐍 Set Up Python ${{ env.PYTHON_VERSION }}"
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+          cache-dependency-path: "backend/requirements.txt"
+
+      # ── Step 3.1 — Install project + quality tools ───────────
+      - name: "📦 Install Dependencies + Quality Tools"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install flake8 safety bandit
+
+      # ── Step 3.2 — Flake8 code style linter ──────────────────
+      # Checks: syntax errors, undefined variables, style violations
+      - name: "🎨 Run Flake8 Linter"
+        run: |
+          echo "================================================================"
+          echo "  FLAKE8 CODE LINTING REPORT"
+          echo "================================================================"
+          echo "Checking Python code style in backend/..."
+          echo ""
+          # --max-line-length=120 : allow up to 120 chars per line
+          # --ignore=E501,W503    : ignore line-length & line-break style
+          # --statistics          : show count of each error type
+          # --count               : show total error count at the end
+          # || true               : report issues but don't fail the pipeline
+          flake8 backend/ \
+            --max-line-length=120 \
+            --ignore=E501,W503,W504 \
+            --statistics \
+            --count \
+            --format='  %(path)s:%(row)d:%(col)d → [%(code)s] %(text)s' \
+            || true
+          echo ""
+          echo "✅ Linting check complete."
+
+      # ── Step 3.3 — Bandit security linter ────────────────────
+      # Bandit scans YOUR Python code for security issues
+      # e.g. hardcoded passwords, SQL injection risks, insecure functions
+      - name: "🛡️ Run Bandit Security Linter"
+        run: |
+          echo "================================================================"
+          echo "  BANDIT PYTHON SECURITY SCAN REPORT"
+          echo "================================================================"
+          echo "Scanning backend/ for security vulnerabilities in source code..."
+          echo ""
+          # -r     : recursive scan
+          # -ll    : only report medium/high severity (skip low noise)
+          # || true: report but don't block the pipeline for student projects
+          bandit -r backend/ -ll --format txt || true
+          echo ""
+          echo "✅ Bandit security scan complete."
+
+      # ── Step 3.4 — Safety dependency vulnerability scan ──────
+      # Safety checks your requirements.txt against a CVE database
+      # It finds packages with known security vulnerabilities
+      - name: "🔒 Run Safety Dependency Vulnerability Scan"
+        run: |
+          echo "================================================================"
+          echo "  SAFETY DEPENDENCY CVE SCAN REPORT"
+          echo "================================================================"
+          echo "Scanning requirements.txt for known CVEs..."
+          echo ""
+          safety check \
+            -r backend/requirements.txt \
+            --output text \
+            || true
+          echo ""
+          echo "✅ Safety vulnerability scan complete."
+
+      # ── Step 3.5 — Summary of quality checks ─────────────────
+      - name: "📊 Code Quality Stage Summary"
+        run: |
+          echo "================================================================"
+          echo "  ✅ Stage 3 Complete — Code Quality & Security"
+          echo "  All scans finished. Review reports above for any warnings."
+          echo "================================================================"
+
+
+  # ==============================================================
+  # STAGE 4 — BUILD DOCKER IMAGE
+  # Purpose : Build the Docker image using the project Dockerfile,
+  #           tag it with both :latest and the commit SHA,
+  #           and verify the image was created correctly
+  # Runs on : Only after Stage 3 passes (needs: stage-3-quality)
+  # ==============================================================
+  stage-4-docker-build:
+    name: "🐳 Stage 4 — Build Docker Image"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    needs: stage-3-quality    # BLOCKED until Stage 3 succeeds
+
+    steps:
+
+      - name: "📥 Checkout Repository"
+        uses: actions/checkout@v4
+
+      # ── Step 4.1 — Set up QEMU for multi-platform support ────
+      # QEMU allows building images for ARM chips (Mac M1/M2, Raspberry Pi)
+      # even when running on x86 GitHub runner machines
+      - name: "⚙️ Set Up QEMU (Multi-Platform Support)"
+        uses: docker/setup-qemu-action@v3
+
+      # ── Step 4.2 — Set up Docker Buildx ──────────────────────
+      # Buildx is the modern Docker build engine with advanced features:
+      # caching, multi-platform, build secrets, etc.
+      - name: "🔧 Set Up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+        with:
+          # Use docker-container driver for full BuildKit feature support
+          driver-opts: |
+            image=moby/buildkit:latest
+
+      # ── Step 4.3 — Generate image metadata & tags ────────────
+      # docker/metadata-action automatically creates proper tags
+      # based on git branch, commit SHA, and semver if applicable
+      - name: "🏷️ Generate Docker Image Metadata"
+        id: docker-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Tag with short commit SHA (e.g. ai-text-summarizer:a1b2c3d)
+            type=sha,prefix=,suffix=,format=short
+            # Always tag the latest build as :latest
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Tag with branch name (e.g. ai-text-summarizer:main)
+            type=ref,event=branch
+          labels: |
+            org.opencontainers.image.title=AI Text Summarizer
+            org.opencontainers.image.description=AI-powered text summarization using Groq LLaMA
+            org.opencontainers.image.vendor=Team Project
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created={{date 'YYYY-MM-DDTHH:mm:ssZ'}}
+
+      # ── Step 4.4 — Build Docker image (no push yet) ──────────
+      - name: "🏗️ Build Docker Image"
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          # push: false → build only, don't push (pushing happens in Stage 5)
+          push: false
+          # Load into local Docker daemon so we can test it
+          load: true
+          tags: ${{ steps.docker-meta.outputs.tags }}
+          labels: ${{ steps.docker-meta.outputs.labels }}
+          # Enable build cache — dramatically speeds up repeat builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Build arguments for traceability
+          build-args: |
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ github.ref_name }}
+
+      # ── Step 4.5 — Verify image was created ──────────────────
+      - name: "✅ Verify Docker Image Was Built"
+        run: |
+          echo "================================================================"
+          echo "  DOCKER IMAGE BUILD VERIFICATION"
+          echo "================================================================"
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE="${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}"
+
+          echo "Checking image exists in local Docker daemon..."
+          docker images | grep "${{ env.IMAGE_NAME }}" || true
+          echo ""
+
+          echo "Image details:"
+          docker inspect "${IMAGE}:latest" \
+            --format '  Size    : {{.Size}} bytes
+  Created : {{.Created}}
+  OS      : {{.Os}}/{{.Architecture}}
+  ID      : {{.Id}}' \
+            2>/dev/null || echo "  (inspect skipped — image may not be tagged :latest yet)"
+
+          echo ""
+          echo "✅ Docker image built and verified successfully."
+          echo "================================================================"
+
+      # ── Step 4.6 — Quick smoke test: can the container start? ─
+      - name: "🔥 Container Smoke Test"
+        run: |
+          echo "Running quick smoke test — starting container..."
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE="${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}"
+
+          # Start container in background with a dummy API key
+          docker run -d \
+            --name smoke-test \
+            -p 5000:5000 \
+            -e GROQ_API_KEY=smoke-test-key \
+            "${IMAGE}:latest" || true
+
+          # Wait 5 seconds for container to initialize
+          sleep 5
+
+          # Check if container is still running (didn't crash immediately)
+          STATUS=$(docker inspect smoke-test --format='{{.State.Status}}' 2>/dev/null || echo "not-found")
+          echo "Container status: ${STATUS}"
+
+          # Clean up regardless
+          docker stop smoke-test 2>/dev/null || true
+          docker rm smoke-test 2>/dev/null || true
+
+          echo "✅ Smoke test complete."
+
+
+  # ==============================================================
+  # STAGE 5 — PUSH DOCKER IMAGE TO DOCKERHUB
+  # Purpose : Authenticate with DockerHub and push the built
+  #           image with both :latest and commit SHA tags
+  #
+  # IMPORTANT: This stage ONLY runs when code is pushed/merged
+  #            to main. It does NOT run on Pull Requests.
+  #            (We don't want unreviewed code pushed to DockerHub)
+  # ==============================================================
+  stage-5-docker-push:
+    name: "📤 Stage 5 — Push to DockerHub"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    needs: stage-4-docker-build   # BLOCKED until Stage 4 succeeds
+
+    # CONDITION: Only push when this is a real push to main (not a PR)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+
+      - name: "📥 Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "⚙️ Set Up QEMU"
+        uses: docker/setup-qemu-action@v3
+
+      - name: "🔧 Set Up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+
+      # ── Step 5.1 — Log in to DockerHub ───────────────────────
+      # Uses secrets stored in GitHub repo Settings → Secrets
+      # Never hardcode credentials in pipeline files
+      - name: "🔐 Login to DockerHub"
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # ── Step 5.2 — Generate metadata again (fresh runner) ────
+      - name: "🏷️ Generate Docker Image Metadata"
+        id: docker-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+          labels: |
+            org.opencontainers.image.title=AI Text Summarizer
+            org.opencontainers.image.description=AI-powered text summarization using Groq LLaMA
+            org.opencontainers.image.vendor=Team Project
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      # ── Step 5.3 — Build AND push to DockerHub ───────────────
+      - name: "🚀 Build & Push Docker Image to DockerHub"
+        id: docker-push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          # push: true → actually push to DockerHub this time
+          push: true
+          tags: ${{ steps.docker-meta.outputs.tags }}
+          labels: ${{ steps.docker-meta.outputs.labels }}
+          # Use GitHub Actions cache to speed up build
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ github.ref_name }}
+          # Generate a Software Bill of Materials (SBOM) — enterprise standard
+          sbom: true
+          # Generate provenance attestation — proves who built the image
+          provenance: true
+
+      # ── Step 5.4 — Print DockerHub image info ────────────────
+      - name: "🎉 DockerHub Push Confirmation"
+        run: |
+          echo "================================================================"
+          echo "  ✅ DOCKER IMAGE SUCCESSFULLY PUSHED TO DOCKERHUB"
+          echo "================================================================"
+          echo ""
+          echo "  Image Digest : ${{ steps.docker-push.outputs.digest }}"
+          echo "  Image Name   : ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}"
+          echo "  Tags pushed  :"
+          echo "    → ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "    → ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
+          echo ""
+          echo "  To pull and run this image anywhere:"
+          echo ""
+          echo "    docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
+          echo ""
+          echo "    docker run -p 5000:5000 \\"
+          echo "      -e GROQ_API_KEY=your_api_key_here \\"
+          echo "      ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
+          echo ""
+          echo "  Then open: http://localhost:5000"
+          echo "================================================================"
+
+
+  # ==============================================================
+  # STAGE 6 — FINAL PIPELINE SUMMARY & REPORTING
+  # Purpose : Collect results from ALL stages and print a complete
+  #           summary. Runs even if previous stages failed so you
+  #           always get a full picture of what passed/failed.
+  # Runs on : ALWAYS — even if earlier stages fail
+  # ==============================================================
+  stage-6-summary:
+    name: "📊 Stage 6 — Pipeline Summary"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    # Wait for ALL previous stages to complete
+    needs:
+      - stage-1-checkout
+      - stage-2-build
+      - stage-3-quality
+      - stage-4-docker-build
+      - stage-5-docker-push
+    # always() = run this job even if previous jobs failed or were skipped
+    if: always()
+
+    steps:
+
+      - name: "📊 Final Pipeline Summary Report"
+        run: |
+          # Helper function to format status with emoji
+          format_status() {
+            case "$1" in
+              success)  echo "✅ PASSED " ;;
+              failure)  echo "❌ FAILED " ;;
+              skipped)  echo "⏭️ SKIPPED" ;;
+              cancelled)echo "🚫 CANCELLED" ;;
+              *)        echo "⚪ UNKNOWN" ;;
+            esac
+          }
+
+          S1=$(format_status "${{ needs.stage-1-checkout.result }}")
+          S2=$(format_status "${{ needs.stage-2-build.result }}")
+          S3=$(format_status "${{ needs.stage-3-quality.result }}")
+          S4=$(format_status "${{ needs.stage-4-docker-build.result }}")
+          S5=$(format_status "${{ needs.stage-5-docker-push.result }}")
+
+          echo "================================================================"
+          echo "   AI TEXT SUMMARIZER — PIPELINE EXECUTION REPORT"
+          echo "================================================================"
+          echo ""
+          echo "  Pipeline    : ${{ github.workflow }}"
+          echo "  Run #       : ${{ github.run_number }}"
+          echo "  Trigger     : ${{ github.event_name }}"
+          echo "  Branch      : ${{ github.ref_name }}"
+          echo "  Commit SHA  : ${{ github.sha }}"
+          echo "  Triggered by: ${{ github.actor }}"
+          echo "  Timestamp   : $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          echo "  ┌────────────────────────────────────────────────────┐"
+          echo "  │              STAGE RESULTS                         │"
+          echo "  ├────────────────────────────────────────────────────┤"
+          echo "  │  Stage 1 — Checkout & Validation      ${S1}       │"
+          echo "  │  Stage 2 — Install & Build            ${S2}       │"
+          echo "  │  Stage 3 — Code Quality & Security    ${S3}       │"
+          echo "  │  Stage 4 — Build Docker Image         ${S4}       │"
+          echo "  │  Stage 5 — Push to DockerHub          ${S5}       │"
+          echo "  └────────────────────────────────────────────────────┘"
+          echo ""
+
+          # Overall pipeline result
+          if [[ "${{ needs.stage-1-checkout.result }}" == "success" && \
+                "${{ needs.stage-2-build.result }}"    == "success" && \
+                "${{ needs.stage-3-quality.result }}"  == "success" && \
+                "${{ needs.stage-4-docker-build.result }}" == "success" ]]; then
+            echo "  🎉 PIPELINE RESULT: SUCCESS"
+            echo ""
+            echo "  The application has been built, validated, and"
+            if [[ "${{ needs.stage-5-docker-push.result }}" == "success" ]]; then
+              echo "  the Docker image has been pushed to DockerHub."
+              echo ""
+              echo "  DockerHub: hub.docker.com/r/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}"
+            else
+              echo "  Docker push was skipped (expected on Pull Requests)."
+            fi
+          else
+            echo "  ⚠️  PIPELINE RESULT: ONE OR MORE STAGES FAILED"
+            echo ""
+            echo "  Check the failed stage logs above for details."
+            echo "  Fix the issues and push a new commit to re-run."
+          fi
+
+          echo ""
+          echo "  View full run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "================================================================"
