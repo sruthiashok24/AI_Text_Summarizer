@@ -48,8 +48,8 @@
         }
         textarea:focus { border-color: #7c3aed; }
 
-        /* ── ISSUE 1 FIX: button layout to hold spinner + text ── */
-        button {
+        /* Issue 1 — summarize button */
+        button#summarizeBtn {
             width: 100%;
             padding: 14px;
             margin-top: 16px;
@@ -65,14 +65,14 @@
             justify-content: center;
             gap: 10px;
         }
-        button:hover:not(:disabled) { background: #6d28d9; }
-        button:disabled {
+        button#summarizeBtn:hover:not(:disabled) { background: #6d28d9; }
+        button#summarizeBtn:disabled {
             background: #4c1d95;
             cursor: not-allowed;
             opacity: 0.7;
         }
 
-        /* ── ISSUE 1 FIX: spinner animation ── */
+        /* Issue 1 — spinner */
         .spinner {
             width: 18px;
             height: 18px;
@@ -80,13 +80,21 @@
             border-top-color: #ffffff;
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
-            display: none;           /* hidden by default */
+            display: none;
             flex-shrink: 0;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Issue 1 — loader text */
+        .loader {
+            text-align: center;
+            margin-top: 16px;
+            display: none;
+            color: #a78bfa;
+            font-size: 14px;
         }
 
+        /* Result box */
         .result {
             margin-top: 24px;
             background: #0f172a;
@@ -95,17 +103,41 @@
             padding: 16px;
             display: none;
         }
-        .result h3 { color: #7c3aed; margin-bottom: 10px; }
-        .result p { line-height: 1.7; color: #cbd5e1; font-size: 14px; }
 
-        /* ── ISSUE 1 FIX: loader text style (replaces old .loader) ── */
-        .loader {
-            text-align: center;
-            margin-top: 16px;
-            display: none;           /* hidden by default */
-            color: #a78bfa;
-            font-size: 14px;
+        /* ── ISSUE 5 FIX: result header holds title + copy button side by side ── */
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
         }
+        .result-header h3 { color: #7c3aed; }
+
+        /* ── ISSUE 5 FIX: copy button styling ── */
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: #1e293b;
+            color: #a78bfa;
+            border: 1px solid #4c1d95;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .copy-btn:hover { background: #2d1f63; border-color: #7c3aed; color: #fff; }
+
+        /* ── ISSUE 5 FIX: "Copied!" confirmation state ── */
+        .copy-btn.copied {
+            background: #14532d;
+            border-color: #166534;
+            color: #86efac;
+            cursor: default;
+        }
+
+        .result p { line-height: 1.7; color: #cbd5e1; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -115,17 +147,24 @@
 
         <textarea id="inputText" placeholder="Paste your long text here..."></textarea>
 
-        <!-- ISSUE 1 FIX: spinner inside button + label span -->
         <button id="summarizeBtn" onclick="summarize()">
             <div class="spinner" id="spinner"></div>
             <span id="btnLabel">✨ Summarize</span>
         </button>
 
-        <!-- ISSUE 1 FIX: supporting status text below button -->
         <div class="loader" id="loader">Analyzing your text, please wait…</div>
 
         <div class="result" id="result">
-            <h3>📝 Summary</h3>
+
+            <!-- ── ISSUE 5 FIX: header row with Copy button next to title ── -->
+            <div class="result-header">
+                <h3>📝 Summary</h3>
+                <button class="copy-btn" id="copyBtn" onclick="copyToClipboard()">
+                    <span id="copyIcon">📋</span>
+                    <span id="copyLabel">Copy</span>
+                </button>
+            </div>
+
             <p id="summaryText"></p>
         </div>
     </div>
@@ -135,19 +174,22 @@
             const text = document.getElementById('inputText').value.trim();
             if (!text) { alert('Please enter some text!'); return; }
 
-            const btn      = document.getElementById('summarizeBtn');
-            const spinner  = document.getElementById('spinner');
-            const btnLabel = document.getElementById('btnLabel');
-            const loader   = document.getElementById('loader');
-            const result   = document.getElementById('result');
+            const btn         = document.getElementById('summarizeBtn');
+            const spinner     = document.getElementById('spinner');
+            const btnLabel    = document.getElementById('btnLabel');
+            const loader      = document.getElementById('loader');
+            const result      = document.getElementById('result');
             const summaryText = document.getElementById('summaryText');
 
-            // ── ISSUE 1 FIX: show spinner, disable button, show loader text ──
-            btn.disabled            = true;
-            spinner.style.display   = 'block';
-            btnLabel.textContent    = 'Summarizing…';
-            loader.style.display    = 'block';
-            result.style.display    = 'none';
+            // Issue 1 — loading state
+            btn.disabled          = true;
+            spinner.style.display = 'block';
+            btnLabel.textContent  = 'Summarizing…';
+            loader.style.display  = 'block';
+            result.style.display  = 'none';
+
+            // ── ISSUE 5 FIX: reset copy button whenever a new summary is fetched ──
+            resetCopyBtn();
 
             try {
                 const response = await fetch('/summarize', {
@@ -161,12 +203,60 @@
             } catch (error) {
                 alert('Error! Please try again.');
             } finally {
-                // ── ISSUE 1 FIX: always restore button & hide loader ──
-                btn.disabled            = false;
-                spinner.style.display   = 'none';
-                btnLabel.textContent    = '✨ Summarize';
-                loader.style.display    = 'none';   // disappears once result is shown
+                // Issue 1 — restore button
+                btn.disabled          = false;
+                spinner.style.display = 'none';
+                btnLabel.textContent  = '✨ Summarize';
+                loader.style.display  = 'none';
             }
+        }
+
+        // ── ISSUE 5 FIX: copy summary text to clipboard ──
+        function copyToClipboard() {
+            const text    = document.getElementById('summaryText').textContent;
+            const copyBtn = document.getElementById('copyBtn');
+
+            // Modern clipboard API
+            navigator.clipboard.writeText(text).then(() => {
+                showCopied();
+            }).catch(() => {
+                // Fallback for older browsers / non-HTTPS
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity  = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showCopied();
+            });
+        }
+
+        // ── ISSUE 5 FIX: show "Copied!" confirmation for 2 seconds ──
+        function showCopied() {
+            const copyBtn   = document.getElementById('copyBtn');
+            const copyIcon  = document.getElementById('copyIcon');
+            const copyLabel = document.getElementById('copyLabel');
+
+            copyBtn.classList.add('copied');
+            copyBtn.disabled    = true;
+            copyIcon.textContent  = '✅';
+            copyLabel.textContent = 'Copied!';
+
+            setTimeout(resetCopyBtn, 2000);
+        }
+
+        // ── ISSUE 5 FIX: reset copy button back to default state ──
+        function resetCopyBtn() {
+            const copyBtn   = document.getElementById('copyBtn');
+            const copyIcon  = document.getElementById('copyIcon');
+            const copyLabel = document.getElementById('copyLabel');
+
+            copyBtn.classList.remove('copied');
+            copyBtn.disabled      = false;
+            copyIcon.textContent  = '📋';
+            copyLabel.textContent = 'Copy';
         }
     </script>
 </body>
