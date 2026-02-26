@@ -6,47 +6,106 @@
     <title>AI Text Summarizer</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Segoe UI', sans-serif;
             background: #0f172a;
             color: #e2e8f0;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            /* ── ISSUE 9 FIX: padding so content never touches screen edges on mobile ── */
+            padding: 24px 16px;
         }
+
+        /* ── ISSUE 9 FIX: hero section above the card ── */
+        .hero {
+            text-align: center;
+            margin-bottom: 28px;
+            max-width: 600px;
+            width: 100%;
+        }
+        .hero .badge {
+            display: inline-block;
+            background: #2d1f63;
+            color: #a78bfa;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-bottom: 14px;
+            border: 1px solid #4c1d95;
+        }
+        /* ── ISSUE 9 FIX: large readable title ── */
+        .hero h1 {
+            font-size: clamp(24px, 5vw, 38px);   /* scales with screen width */
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.2;
+            margin-bottom: 12px;
+        }
+        .hero h1 span { color: #7c3aed; }
+
+        /* ── ISSUE 9 FIX: subtitle / brief description ── */
+        .hero p {
+            font-size: clamp(13px, 2.5vw, 16px);
+            color: #94a3b8;
+            line-height: 1.6;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* ── ISSUE 9 FIX: card is full-width on mobile, capped at 700px on desktop ── */
         .container {
             background: #1e293b;
-            padding: 40px;
+            padding: 32px;
             border-radius: 16px;
-            width: 700px;
+            width: 100%;
+            max-width: 700px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         }
-        h1 {
-            text-align: center;
-            font-size: 28px;
+
+        /* ── ISSUE 9 FIX: section label above textarea ── */
+        .input-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
             margin-bottom: 8px;
-            color: #7c3aed;
         }
-        p.subtitle {
-            text-align: center;
-            color: #94a3b8;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
+
         textarea {
             width: 100%;
-            height: 200px;
+            /* ── ISSUE 9 FIX: taller on desktop, shorter on mobile via clamp ── */
+            height: clamp(140px, 25vw, 220px);
             background: #0f172a;
             border: 1px solid #334155;
             border-radius: 10px;
             padding: 16px;
             color: #e2e8f0;
             font-size: 14px;
-            resize: none;
+            resize: vertical;
             outline: none;
+            font-family: inherit;
+            line-height: 1.6;
         }
         textarea:focus { border-color: #7c3aed; }
+
+        /* ── ISSUE 9 FIX: word count row below textarea ── */
+        .textarea-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #475569;
+        }
+        .textarea-meta .hint { font-style: italic; }
 
         /* Issue 1 — summarize button */
         button#summarizeBtn {
@@ -76,7 +135,7 @@
         .spinner {
             width: 18px;
             height: 18px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+            border: 3px solid rgba(255,255,255,0.3);
             border-top-color: #ffffff;
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
@@ -104,7 +163,7 @@
             display: none;
         }
 
-        /* ── ISSUE 5 FIX: result header holds title + copy button side by side ── */
+        /* Issue 5 — result header */
         .result-header {
             display: flex;
             justify-content: space-between;
@@ -113,7 +172,7 @@
         }
         .result-header h3 { color: #7c3aed; }
 
-        /* ── ISSUE 5 FIX: copy button styling ── */
+        /* Issue 5 — copy button */
         .copy-btn {
             display: flex;
             align-items: center;
@@ -128,8 +187,6 @@
             transition: background 0.2s, color 0.2s, border-color 0.2s;
         }
         .copy-btn:hover { background: #2d1f63; border-color: #7c3aed; color: #fff; }
-
-        /* ── ISSUE 5 FIX: "Copied!" confirmation state ── */
         .copy-btn.copied {
             background: #14532d;
             border-color: #166534;
@@ -138,25 +195,71 @@
         }
 
         .result p { line-height: 1.7; color: #cbd5e1; font-size: 14px; }
+
+        /* ── ISSUE 9 FIX: feature pills at the bottom ── */
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 28px;
+            max-width: 700px;
+            width: 100%;
+        }
+        .features span {
+            background: #1e293b;
+            color: #64748b;
+            font-size: 12px;
+            padding: 5px 12px;
+            border-radius: 999px;
+            border: 1px solid #334155;
+        }
+
+        /* ── ISSUE 9 FIX: mobile breakpoint — tighten padding & font sizes ── */
+        @media (max-width: 480px) {
+            .container { padding: 20px 16px; }
+            .hero { margin-bottom: 20px; }
+            button#summarizeBtn { font-size: 15px; padding: 12px; }
+        }
     </style>
 </head>
 <body>
+
+    <!-- ── ISSUE 9 FIX: hero section — title + description visible immediately ── -->
+    <div class="hero">
+        <div class="badge">🤖 Powered by Groq LLaMA</div>
+        <h1>Summarize Any Text <span>Instantly</span></h1>
+        <p>Paste an article, essay, or report and get a clear, concise summary in seconds — no sign-up required.</p>
+    </div>
+
+    <!-- ── ISSUE 9 FIX: card — max-width 700px, full-width on mobile ── -->
     <div class="container">
-        <h1>🤖 AI Text Summarizer</h1>
-        <p class="subtitle">Paste any long text and get a concise summary instantly</p>
 
-        <textarea id="inputText" placeholder="Paste your long text here..."></textarea>
+        <div class="input-label">Your Text</div>
+        <!-- ── ISSUE 9 FIX: textarea with placeholder that guides the user ── -->
+        <textarea
+            id="inputText"
+            placeholder="Paste your article, essay, email, or any long text here (500+ words work best)…"
+            oninput="updateWordCount()"
+        ></textarea>
 
+        <!-- ── ISSUE 9 FIX: live word + char count below textarea ── -->
+        <div class="textarea-meta">
+            <span class="hint">Tip: works best with 100+ words</span>
+            <span id="wordCount">0 words · 0 chars</span>
+        </div>
+
+        <!-- Issue 1 — button with spinner -->
         <button id="summarizeBtn" onclick="summarize()">
             <div class="spinner" id="spinner"></div>
             <span id="btnLabel">✨ Summarize</span>
         </button>
 
+        <!-- Issue 1 — loader -->
         <div class="loader" id="loader">Analyzing your text, please wait…</div>
 
+        <!-- Result box with Issue 5 Copy button -->
         <div class="result" id="result">
-
-            <!-- ── ISSUE 5 FIX: header row with Copy button next to title ── -->
             <div class="result-header">
                 <h3>📝 Summary</h3>
                 <button class="copy-btn" id="copyBtn" onclick="copyToClipboard()">
@@ -164,12 +267,29 @@
                     <span id="copyLabel">Copy</span>
                 </button>
             </div>
-
             <p id="summaryText"></p>
         </div>
     </div>
 
+    <!-- ── ISSUE 9 FIX: feature pills so users instantly understand what the app does ── -->
+    <div class="features">
+        <span>⚡ Under 10 seconds</span>
+        <span>📄 500+ word support</span>
+        <span>📋 One-click copy</span>
+        <span>🔒 Key stays in .env</span>
+        <span>📱 Mobile friendly</span>
+    </div>
+
     <script>
+        // ── ISSUE 9 FIX: live word + character counter ──
+        function updateWordCount() {
+            const text  = document.getElementById('inputText').value;
+            const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+            const chars = text.length;
+            document.getElementById('wordCount').textContent =
+                `${words} word${words !== 1 ? 's' : ''} · ${chars} char${chars !== 1 ? 's' : ''}`;
+        }
+
         async function summarize() {
             const text = document.getElementById('inputText').value.trim();
             if (!text) { alert('Please enter some text!'); return; }
@@ -187,8 +307,6 @@
             btnLabel.textContent  = 'Summarizing…';
             loader.style.display  = 'block';
             result.style.display  = 'none';
-
-            // ── ISSUE 5 FIX: reset copy button whenever a new summary is fetched ──
             resetCopyBtn();
 
             try {
@@ -211,16 +329,10 @@
             }
         }
 
-        // ── ISSUE 5 FIX: copy summary text to clipboard ──
+        // Issue 5 — copy to clipboard
         function copyToClipboard() {
-            const text    = document.getElementById('summaryText').textContent;
-            const copyBtn = document.getElementById('copyBtn');
-
-            // Modern clipboard API
-            navigator.clipboard.writeText(text).then(() => {
-                showCopied();
-            }).catch(() => {
-                // Fallback for older browsers / non-HTTPS
+            const text = document.getElementById('summaryText').textContent;
+            navigator.clipboard.writeText(text).then(showCopied).catch(() => {
                 const ta = document.createElement('textarea');
                 ta.value = text;
                 ta.style.position = 'fixed';
@@ -233,26 +345,21 @@
             });
         }
 
-        // ── ISSUE 5 FIX: show "Copied!" confirmation for 2 seconds ──
         function showCopied() {
             const copyBtn   = document.getElementById('copyBtn');
             const copyIcon  = document.getElementById('copyIcon');
             const copyLabel = document.getElementById('copyLabel');
-
             copyBtn.classList.add('copied');
-            copyBtn.disabled    = true;
+            copyBtn.disabled      = true;
             copyIcon.textContent  = '✅';
             copyLabel.textContent = 'Copied!';
-
             setTimeout(resetCopyBtn, 2000);
         }
 
-        // ── ISSUE 5 FIX: reset copy button back to default state ──
         function resetCopyBtn() {
             const copyBtn   = document.getElementById('copyBtn');
             const copyIcon  = document.getElementById('copyIcon');
             const copyLabel = document.getElementById('copyLabel');
-
             copyBtn.classList.remove('copied');
             copyBtn.disabled      = false;
             copyIcon.textContent  = '📋';
