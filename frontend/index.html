@@ -1,370 +1,942 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Text Summarizer</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralSum — AI Text Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060a0f;
+  --surface: #0d1520;
+  --surface2: #111c2b;
+  --border: #1a2d45;
+  --accent: #00e5ff;
+  --accent2: #ff6b6b;
+  --accent3: #a8ff78;
+  --text: #cdd9e8;
+  --muted: #5a7a9a;
+  --glow: rgba(0,229,255,0.15);
+}
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #0f172a;
-            color: #e2e8f0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            /* ── ISSUE 9 FIX: padding so content never touches screen edges on mobile ── */
-            padding: 24px 16px;
-        }
+* { margin:0; padding:0; box-sizing:border-box; }
 
-        /* ── ISSUE 9 FIX: hero section above the card ── */
-        .hero {
-            text-align: center;
-            margin-bottom: 28px;
-            max-width: 600px;
-            width: 100%;
-        }
-        .hero .badge {
-            display: inline-block;
-            background: #2d1f63;
-            color: #a78bfa;
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 4px 12px;
-            border-radius: 999px;
-            margin-bottom: 14px;
-            border: 1px solid #4c1d95;
-        }
-        /* ── ISSUE 9 FIX: large readable title ── */
-        .hero h1 {
-            font-size: clamp(24px, 5vw, 38px);   /* scales with screen width */
-            font-weight: 700;
-            color: #f1f5f9;
-            line-height: 1.2;
-            margin-bottom: 12px;
-        }
-        .hero h1 span { color: #7c3aed; }
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-        /* ── ISSUE 9 FIX: subtitle / brief description ── */
-        .hero p {
-            font-size: clamp(13px, 2.5vw, 16px);
-            color: #94a3b8;
-            line-height: 1.6;
-            max-width: 480px;
-            margin: 0 auto;
-        }
+/* Grid background */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events:none;
+  z-index:0;
+}
 
-        /* ── ISSUE 9 FIX: card is full-width on mobile, capped at 700px on desktop ── */
-        .container {
-            background: #1e293b;
-            padding: 32px;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 700px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-        }
+.noise {
+  position:fixed;
+  inset:0;
+  opacity:0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:0;
+}
 
-        /* ── ISSUE 9 FIX: section label above textarea ── */
-        .input-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-bottom: 8px;
-        }
+/* ── HEADER ── */
+header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
 
-        textarea {
-            width: 100%;
-            /* ── ISSUE 9 FIX: taller on desktop, shorter on mobile via clamp ── */
-            height: clamp(140px, 25vw, 220px);
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 16px;
-            color: #e2e8f0;
-            font-size: 14px;
-            resize: vertical;
-            outline: none;
-            font-family: inherit;
-            line-height: 1.6;
-        }
-        textarea:focus { border-color: #7c3aed; }
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.5px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-        /* ── ISSUE 9 FIX: word count row below textarea ── */
-        .textarea-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 6px;
-            font-size: 12px;
-            color: #475569;
-        }
-        .textarea-meta .hint { font-style: italic; }
+.logo-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
 
-        /* Issue 1 — summarize button */
-        button#summarizeBtn {
-            width: 100%;
-            padding: 14px;
-            margin-top: 16px;
-            background: #7c3aed;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        button#summarizeBtn:hover:not(:disabled) { background: #6d28d9; }
-        button#summarizeBtn:disabled {
-            background: #4c1d95;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.5; transform:scale(0.7); }
+}
 
-        /* Issue 1 — spinner */
-        .spinner {
-            width: 18px;
-            height: 18px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top-color: #ffffff;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            display: none;
-            flex-shrink: 0;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
+.badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
 
-        /* Issue 1 — loader text */
-        .loader {
-            text-align: center;
-            margin-top: 16px;
-            display: none;
-            color: #a78bfa;
-            font-size: 14px;
-        }
+/* ── HERO ── */
+.hero {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 20px 30px;
+}
 
-        /* Result box */
-        .result {
-            margin-top: 24px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 16px;
-            display: none;
-        }
+.hero-eyebrow {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+  opacity: 0;
+  animation: fadeUp 0.6s 0.2s ease forwards;
+}
 
-        /* Issue 5 — result header */
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .result-header h3 { color: #7c3aed; }
+.hero h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(38px, 7vw, 72px);
+  font-weight: 800;
+  line-height: 1.05;
+  color: #fff;
+  letter-spacing: -2px;
+  opacity: 0;
+  animation: fadeUp 0.6s 0.35s ease forwards;
+}
 
-        /* Issue 5 — copy button */
-        .copy-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            background: #1e293b;
-            color: #a78bfa;
-            border: 1px solid #4c1d95;
-            border-radius: 8px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s, border-color 0.2s;
-        }
-        .copy-btn:hover { background: #2d1f63; border-color: #7c3aed; color: #fff; }
-        .copy-btn.copied {
-            background: #14532d;
-            border-color: #166534;
-            color: #86efac;
-            cursor: default;
-        }
+.hero h1 span {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--accent);
+}
 
-        .result p { line-height: 1.7; color: #cbd5e1; font-size: 14px; }
+.hero p {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 14px;
+  opacity: 0;
+  animation: fadeUp 0.6s 0.5s ease forwards;
+}
 
-        /* ── ISSUE 9 FIX: feature pills at the bottom ── */
-        .features {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 28px;
-            max-width: 700px;
-            width: 100%;
-        }
-        .features span {
-            background: #1e293b;
-            color: #64748b;
-            font-size: 12px;
-            padding: 5px 12px;
-            border-radius: 999px;
-            border: 1px solid #334155;
-        }
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
 
-        /* ── ISSUE 9 FIX: mobile breakpoint — tighten padding & font sizes ── */
-        @media (max-width: 480px) {
-            .container { padding: 20px 16px; }
-            .hero { margin-bottom: 20px; }
-            button#summarizeBtn { font-size: 15px; padding: 12px; }
-        }
-    </style>
+/* ── TABS ── */
+.tabs-wrapper {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin: 30px auto 0;
+  max-width: 600px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 4px;
+  background: var(--surface);
+  opacity: 0;
+  animation: fadeUp 0.6s 0.65s ease forwards;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.tab.active {
+  background: var(--surface2);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 20px var(--glow);
+}
+
+.tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.03); }
+
+/* ── MAIN LAYOUT ── */
+.main {
+  position: relative;
+  z-index: 5;
+  max-width: 900px;
+  margin: 30px auto 60px;
+  padding: 0 20px;
+}
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp 0.4s ease;
+}
+
+.card::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.4;
+}
+
+.card-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+textarea, input[type="text"], input[type="number"] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  resize: vertical;
+}
+
+textarea { min-height: 200px; }
+
+textarea:focus, input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--glow);
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.meta-row span { display: flex; align-items: center; gap: 5px; }
+
+/* ── OPTIONS ROW ── */
+.options-row {
+  display: flex;
+  gap: 10px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.option-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.option-chip.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--glow);
+}
+
+.option-chip:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+
+/* ── BUTTONS ── */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content:'';
+  position:absolute;
+  top:50%; left:-60%;
+  width:40%; height:100%;
+  background: rgba(255,255,255,0.25);
+  transform: skewX(-20deg) translateY(-50%);
+  transition: left 0.4s ease;
+}
+
+.btn-primary:hover::after { left:120%; }
+.btn-primary:hover { background: #00cfed; transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,229,255,0.35); }
+.btn-primary:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+.btn-secondary {
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── LOADER ── */
+.loader {
+  display: none;
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.loader-bar {
+  width: 100%;
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 14px;
+  overflow: hidden;
+}
+
+.loader-bar-inner {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  width: 30%;
+  border-radius: 2px;
+  animation: slide 1.5s ease-in-out infinite;
+}
+
+@keyframes slide {
+  0% { margin-left: -30%; }
+  100% { margin-left: 130%; }
+}
+
+/* ── RESULT ── */
+.result-box {
+  display: none;
+  margin-top: 20px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.result-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.result-label::before {
+  content:'';
+  width:6px; height:6px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 2s infinite;
+}
+
+.result-actions { display:flex; gap:8px; }
+
+.result-body {
+  padding: 20px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+/* ── COMPARE LAYOUT ── */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width:640px) {
+  .split { grid-template-columns: 1fr; }
+  header { padding: 15px 20px; }
+  .hero h1 { letter-spacing: -1px; }
+}
+
+/* ── HISTORY ── */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.history-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.history-item:hover { border-color: var(--accent); }
+
+.history-item-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-meta {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  gap: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.empty-state .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+
+/* ── STATS ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+}
+
+.stat-card .value {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.stat-card .label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 13px;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* ── CHAR COUNTER ── */
+.compression-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--accent3);
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(168,255,120,0.1);
+  border: 1px solid rgba(168,255,120,0.2);
+}
+</style>
 </head>
 <body>
 
-    <!-- ── ISSUE 9 FIX: hero section — title + description visible immediately ── -->
-    <div class="hero">
-        <div class="badge">🤖 Powered by Groq LLaMA</div>
-        <h1>Summarize Any Text <span>Instantly</span></h1>
-        <p>Paste an article, essay, or report and get a clear, concise summary in seconds — no sign-up required.</p>
-    </div>
+<div class="noise"></div>
 
-    <!-- ── ISSUE 9 FIX: card — max-width 700px, full-width on mobile ── -->
-    <div class="container">
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    NeuralSum
+  </div>
+  <div class="badge">v2.0 · OCC Team</div>
+</header>
 
-        <div class="input-label">Your Text</div>
-        <!-- ── ISSUE 9 FIX: textarea with placeholder that guides the user ── -->
-        <textarea
-            id="inputText"
-            placeholder="Paste your article, essay, email, or any long text here (500+ words work best)…"
-            oninput="updateWordCount()"
-        ></textarea>
+<div class="hero">
+  <div class="hero-eyebrow">⚡ Powered by Groq + LLaMA 3</div>
+  <h1>Your <span>AI</span><br>Text Toolkit</h1>
+  <p>Summarize · Analyze · Compare · Extract — at warp speed</p>
+</div>
 
-        <!-- ── ISSUE 9 FIX: live word + char count below textarea ── -->
-        <div class="textarea-meta">
-            <span class="hint">Tip: works best with 100+ words</span>
-            <span id="wordCount">0 words · 0 chars</span>
+<div class="tabs-wrapper">
+  <button class="tab active" onclick="switchTab('summarize', this)">✦ Summarize</button>
+  <button class="tab" onclick="switchTab('analyze', this)">◈ Analyze</button>
+  <button class="tab" onclick="switchTab('compare', this)">⇄ Compare</button>
+  <button class="tab" onclick="switchTab('history', this)">◎ History</button>
+</div>
+
+<div class="main">
+
+  <!-- ── SUMMARIZE PANEL ── -->
+  <div id="panel-summarize" class="panel active">
+    <div class="card">
+      <div class="card-label">// Input Text</div>
+      <textarea id="sumInput" placeholder="Paste your text here — articles, reports, papers, anything..."></textarea>
+      <div class="meta-row">
+        <span>Words: <b id="sumWords">0</b> &nbsp;|&nbsp; Chars: <b id="sumChars">0</b></span>
+        <button class="btn-secondary" onclick="document.getElementById('sumInput').value=''; updateCount()">Clear</button>
+      </div>
+
+      <div class="card-label" style="margin-top:18px;">// Summary Style</div>
+      <div class="options-row" id="styleChips">
+        <button class="option-chip active" data-val="concise">Concise</button>
+        <button class="option-chip" data-val="detailed">Detailed</button>
+        <button class="option-chip" data-val="bullet">Bullet Points</button>
+        <button class="option-chip" data-val="eli5">ELI5</button>
+        <button class="option-chip" data-val="tweet">Tweet-size</button>
+      </div>
+
+      <div class="card-label" style="margin-top:14px;">// Output Language</div>
+      <div class="options-row" id="langChips">
+        <button class="option-chip active" data-val="English">English</button>
+        <button class="option-chip" data-val="Tamil">Tamil</button>
+        <button class="option-chip" data-val="Hindi">Hindi</button>
+        <button class="option-chip" data-val="French">French</button>
+        <button class="option-chip" data-val="Spanish">Spanish</button>
+      </div>
+
+      <button class="btn-primary" onclick="doSummarize()" id="sumBtn">
+        ✦ Generate Summary
+      </button>
+
+      <div class="loader" id="sumLoader">
+        <div>Neural network processing...</div>
+        <div class="loader-bar"><div class="loader-bar-inner"></div></div>
+      </div>
+
+      <div class="result-box" id="sumResult">
+        <div class="result-header">
+          <div class="result-label">Summary Output</div>
+          <div class="result-actions">
+  <div class="compression-badge" id="compressionBadge">⚡ 0% compression</div>
+  <button class="btn-secondary" onclick="copyResult('sumOutput')">Copy</button>
+  <button class="btn-secondary" onclick="downloadResult('sumOutput')">Download</button>
+  </div>
         </div>
+        <div class="result-body" id="sumOutput"></div>
+      </div>
+    </div>
+  </div>
 
-        <!-- Issue 1 — button with spinner -->
-        <button id="summarizeBtn" onclick="summarize()">
-            <div class="spinner" id="spinner"></div>
-            <span id="btnLabel">✨ Summarize</span>
-        </button>
+  <!-- ── ANALYZE PANEL ── -->
+  <div id="panel-analyze" class="panel">
+    <div class="card">
+      <div class="card-label">// Text to Analyze</div>
+      <textarea id="anaInput" placeholder="Enter text to extract insights, tone, key points, entities..."></textarea>
+      <div class="meta-row">
+        <span>Words: <span id="anaWords">0</span></span>
+      </div>
 
-        <!-- Issue 1 — loader -->
-        <div class="loader" id="loader">Analyzing your text, please wait…</div>
+      <div class="card-label" style="margin-top:18px;">// Analysis Type</div>
+      <div class="options-row" id="anaChips">
+        <button class="option-chip active" data-val="key-points">Key Points</button>
+        <button class="option-chip" data-val="sentiment">Sentiment</button>
+        <button class="option-chip" data-val="entities">Named Entities</button>
+        <button class="option-chip" data-val="questions">Questions to Ask</button>
+        <button class="option-chip" data-val="action-items">Action Items</button>
+      </div>
 
-        <!-- Result box with Issue 5 Copy button -->
-        <div class="result" id="result">
-            <div class="result-header">
-                <h3>📝 Summary</h3>
-                <button class="copy-btn" id="copyBtn" onclick="copyToClipboard()">
-                    <span id="copyIcon">📋</span>
-                    <span id="copyLabel">Copy</span>
-                </button>
-            </div>
-            <p id="summaryText"></p>
+      <button class="btn-primary" onclick="doAnalyze()" id="anaBtn">◈ Analyze Text</button>
+
+      <div class="loader" id="anaLoader">
+        <div>Analyzing patterns...</div>
+        <div class="loader-bar"><div class="loader-bar-inner"></div></div>
+      </div>
+
+      <div class="result-box" id="anaResult">
+        <div class="result-header">
+          <div class="result-label">Analysis Output</div>
+          <div class="result-actions">
+            <button class="btn-secondary" onclick="copyResult('anaOutput')">Copy</button>
+          </div>
         </div>
+        <div class="result-body" id="anaOutput"></div>
+      </div>
     </div>
+  </div>
 
-    <!-- ── ISSUE 9 FIX: feature pills so users instantly understand what the app does ── -->
-    <div class="features">
-        <span>⚡ Under 10 seconds</span>
-        <span>📄 500+ word support</span>
-        <span>📋 One-click copy</span>
-        <span>🔒 Key stays in .env</span>
-        <span>📱 Mobile friendly</span>
+  <!-- ── COMPARE PANEL ── -->
+  <div id="panel-compare" class="panel">
+    <div class="card">
+      <div class="split">
+        <div>
+          <div class="card-label">// Text A</div>
+          <textarea id="cmpA" placeholder="First text or document..." style="min-height:160px;"></textarea>
+        </div>
+        <div>
+          <div class="card-label">// Text B</div>
+          <textarea id="cmpB" placeholder="Second text or document..." style="min-height:160px;"></textarea>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="doCompare()" id="cmpBtn" style="margin-top:18px;">⇄ Compare Both Texts</button>
+
+      <div class="loader" id="cmpLoader">
+        <div>Comparing documents...</div>
+        <div class="loader-bar"><div class="loader-bar-inner"></div></div>
+      </div>
+
+      <div class="result-box" id="cmpResult">
+        <div class="result-header">
+          <div class="result-label">Comparison Output</div>
+          <div class="result-actions">
+            <button class="btn-secondary" onclick="copyResult('cmpOutput')">Copy</button>
+          </div>
+        </div>
+        <div class="result-body" id="cmpOutput"></div>
+      </div>
     </div>
+  </div>
 
-    <script>
-        // ── ISSUE 9 FIX: live word + character counter ──
-        function updateWordCount() {
-            const text  = document.getElementById('inputText').value;
-            const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-            const chars = text.length;
-            document.getElementById('wordCount').textContent =
-                `${words} word${words !== 1 ? 's' : ''} · ${chars} char${chars !== 1 ? 's' : ''}`;
-        }
+  <!-- ── HISTORY PANEL ── -->
+  <div id="panel-history" class="panel">
+    <div class="stats-grid" id="statsGrid"></div>
 
-        async function summarize() {
-            const text = document.getElementById('inputText').value.trim();
-            if (!text) { alert('Please enter some text!'); return; }
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div class="card-label">// Session History</div>
+        <button class="btn-secondary" onclick="clearHistory()">Clear All</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
 
-            const btn         = document.getElementById('summarizeBtn');
-            const spinner     = document.getElementById('spinner');
-            const btnLabel    = document.getElementById('btnLabel');
-            const loader      = document.getElementById('loader');
-            const result      = document.getElementById('result');
-            const summaryText = document.getElementById('summaryText');
+</div>
 
-            // Issue 1 — loading state
-            btn.disabled          = true;
-            spinner.style.display = 'block';
-            btnLabel.textContent  = 'Summarizing…';
-            loader.style.display  = 'block';
-            result.style.display  = 'none';
-            resetCopyBtn();
+<div class="toast" id="toast"></div>
 
-            try {
-                const response = await fetch('/summarize', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text })
-                });
-                const data = await response.json();
-                summaryText.textContent = data.summary;
-                result.style.display = 'block';
-            } catch (error) {
-                alert('Error! Please try again.');
-            } finally {
-                // Issue 1 — restore button
-                btn.disabled          = false;
-                spinner.style.display = 'none';
-                btnLabel.textContent  = '✨ Summarize';
-                loader.style.display  = 'none';
-            }
-        }
+<script>
+const API = 'http://127.0.0.1:5000';
+let history = JSON.parse(localStorage.getItem("history") || "[]");
 
-        // Issue 5 — copy to clipboard
-        function copyToClipboard() {
-            const text = document.getElementById('summaryText').textContent;
-            navigator.clipboard.writeText(text).then(showCopied).catch(() => {
-                const ta = document.createElement('textarea');
-                ta.value = text;
-                ta.style.position = 'fixed';
-                ta.style.opacity  = '0';
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                showCopied();
-            });
-        }
+// ── CHIP SELECTION ──
+document.querySelectorAll('.options-row').forEach(row => {
+  row.querySelectorAll('.option-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      row.querySelectorAll('.option-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+});
 
-        function showCopied() {
-            const copyBtn   = document.getElementById('copyBtn');
-            const copyIcon  = document.getElementById('copyIcon');
-            const copyLabel = document.getElementById('copyLabel');
-            copyBtn.classList.add('copied');
-            copyBtn.disabled      = true;
-            copyIcon.textContent  = '✅';
-            copyLabel.textContent = 'Copied!';
-            setTimeout(resetCopyBtn, 2000);
-        }
+function getChipVal(groupId) {
+  return document.querySelector(`#${groupId} .active`)?.dataset.val || '';
+}
 
-        function resetCopyBtn() {
-            const copyBtn   = document.getElementById('copyBtn');
-            const copyIcon  = document.getElementById('copyIcon');
-            const copyLabel = document.getElementById('copyLabel');
-            copyBtn.classList.remove('copied');
-            copyBtn.disabled      = false;
-            copyIcon.textContent  = '📋';
-            copyLabel.textContent = 'Copy';
-        }
-    </script>
+// ── WORD COUNT ──
+const sumInput = document.getElementById('sumInput');
+const anaInput = document.getElementById('anaInput');
+
+function updateCount() {
+  const v = sumInput.value;
+  document.getElementById('sumWords').textContent = v.trim() ? v.trim().split(/\s+/).length : 0;
+  document.getElementById('sumChars').textContent = v.length;
+}
+
+sumInput.addEventListener('input', updateCount);
+anaInput.addEventListener('input', () => {
+  const v = anaInput.value;
+  document.getElementById('anaWords').textContent = v.trim() ? v.trim().split(/\s+/).length : 0;
+});
+
+// ── TABS ──
+function switchTab(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'history') renderHistory();
+}
+
+// ── API CALL ──
+async function callAPI(endpoint, body) {
+  const res = await fetch(`${API}/${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+function showLoader(id) {
+  document.getElementById(id + 'Loader').style.display = 'block';
+  document.getElementById(id + 'Result').style.display = 'none';
+  document.getElementById(id + 'Btn').disabled = true;
+}
+
+function hideLoader(id) {
+  document.getElementById(id + 'Loader').style.display = 'none';
+  document.getElementById(id + 'Btn').disabled = false;
+}
+
+function showResult(id, text) {
+  document.getElementById(id + 'Output').textContent = text;
+  document.getElementById(id + 'Result').style.display = 'block';
+}
+
+// ── SUMMARIZE ──
+async function doSummarize() {
+  const text = sumInput.value.trim();
+  if (!text) return showToast('Please paste some text first');
+
+  const style = getChipVal('styleChips');
+  const lang = getChipVal('langChips');
+
+  showLoader('sum');
+  try {
+    const data = await callAPI('summarize', { text, style, language: lang });
+    showResult('sum', data.summary);
+
+    // compression ratio
+    const ratio = Math.round((1 - data.summary.length / text.length) * 100);
+    document.getElementById('compressionBadge').textContent = `⚡ ${Math.max(0, ratio)}% compression`;
+
+    addHistory('summarize', text, data.summary, style);
+    showToast('Summary generated!');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  hideLoader('sum');
+}
+
+// ── ANALYZE ──
+async function doAnalyze() {
+  const text = anaInput.value.trim();
+  if (!text) return showToast('Please paste some text first');
+
+  const type = getChipVal('anaChips');
+  showLoader('ana');
+  try {
+    const data = await callAPI('analyze', { text, type });
+    showResult('ana', data.result);
+    addHistory('analyze', text, data.result, type);
+    showToast('Analysis complete!');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  hideLoader('ana');
+}
+
+// ── COMPARE ──
+async function doCompare() {
+  const textA = document.getElementById('cmpA').value.trim();
+  const textB = document.getElementById('cmpB').value.trim();
+  if (!textA || !textB) return showToast('Please fill both text fields');
+
+  showLoader('cmp');
+  try {
+    const data = await callAPI('compare', { textA, textB });
+    showResult('cmp', data.result);
+    addHistory('compare', textA.slice(0,80)+'...', data.result, 'comparison');
+    showToast('Comparison ready!');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  hideLoader('cmp');
+}
+
+// ── HISTORY ──
+function addHistory(type, input, output, meta) {
+  history.unshift({
+    type,
+    input: input.slice(0, 100),
+    output,
+    meta,
+    ts: Date.now()
+  });
+
+  if (history.length > 20) history.pop();
+
+  localStorage.setItem("history", JSON.stringify(history));
+}
+
+function renderHistory() {
+  const stats = document.getElementById('statsGrid');
+  const sumCount = history.filter(h=>h.type==='summarize').length;
+  const anaCount = history.filter(h=>h.type==='analyze').length;
+  const cmpCount = history.filter(h=>h.type==='compare').length;
+  stats.innerHTML = `
+    <div class="stat-card"><div class="value">${history.length}</div><div class="label">Total Queries</div></div>
+    <div class="stat-card"><div class="value" style="color:var(--accent)">${sumCount}</div><div class="label">Summaries</div></div>
+    <div class="stat-card"><div class="value" style="color:var(--accent2)">${anaCount}</div><div class="label">Analyses</div></div>
+    <div class="stat-card"><div class="value" style="color:var(--accent3)">${cmpCount}</div><div class="label">Comparisons</div></div>
+  `;
+
+  const list = document.getElementById('historyList');
+  if (!history.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">◎</div>No history yet. Start by summarizing some text.</div>';
+    return;
+  }
+  list.innerHTML = history.map((h, i) => `
+    <div class="history-item" onclick="loadHistory(${i})">
+      <div class="history-item-title">${h.input}</div>
+      <div class="history-item-meta">
+        <span>${h.type.toUpperCase()}</span>
+        <span>${h.meta}</span>
+        <span>${new Date(h.ts).toLocaleTimeString()}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function loadHistory(i) {
+  const h = history[i];
+  if (h.type === 'summarize') {
+    sumInput.value = h.input;
+    showResult('sum', h.output);
+    switchTab('summarize', document.querySelectorAll('.tab')[0]);
+  }
+}
+
+function clearHistory() {
+  history = [];
+  localStorage.removeItem("history");
+  renderHistory();
+  showToast("History cleared");
+}
+// ── UTILS ──
+function copyResult(id) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent);
+  showToast('Copied to clipboard!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function downloadResult(id) {
+  const text = document.getElementById(id).textContent;
+
+  if (!text) {
+    showToast("Nothing to download");
+    return;
+  }
+
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "summary.txt";
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+  showToast("Downloaded successfully");
+}
+renderHistory();
+</script>
 </body>
 </html>
