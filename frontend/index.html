@@ -30,7 +30,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Grid background */
 body::before {
   content:'';
   position:fixed;
@@ -52,7 +51,6 @@ body::before {
   z-index:0;
 }
 
-/* ── HEADER ── */
 header {
   position: relative;
   z-index: 10;
@@ -98,7 +96,6 @@ header {
   text-transform: uppercase;
 }
 
-/* ── HERO ── */
 .hero {
   position: relative;
   z-index: 5;
@@ -145,7 +142,6 @@ header {
   to   { opacity:1; transform:translateY(0); }
 }
 
-/* ── TABS ── */
 .tabs-wrapper {
   position: relative;
   z-index: 5;
@@ -190,7 +186,6 @@ header {
 
 .tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.03); }
 
-/* ── MAIN LAYOUT ── */
 .main {
   position: relative;
   z-index: 5;
@@ -202,7 +197,6 @@ header {
 .panel { display: none; }
 .panel.active { display: block; }
 
-/* ── CARD ── */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -223,11 +217,26 @@ header {
 }
 
 .card-label {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--accent);
   margin-bottom: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-label::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 2s infinite;
 }
 
 textarea, input[type="text"], input[type="number"] {
@@ -242,6 +251,8 @@ textarea, input[type="text"], input[type="number"] {
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   resize: vertical;
+  line-height: 1.7;
+  letter-spacing: 0.3px;
 }
 
 textarea { min-height: 200px; }
@@ -249,6 +260,11 @@ textarea { min-height: 200px; }
 textarea:focus, input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--glow);
+}
+
+textarea::placeholder {
+  color: var(--muted);
+  font-style: italic;
 }
 
 .meta-row {
@@ -262,16 +278,38 @@ textarea:focus, input:focus {
 
 .meta-row span { display: flex; align-items: center; gap: 5px; }
 
-/* ── OPTIONS ROW ── */
+.section-title {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 18px 0 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 2s infinite;
+}
+
 .options-row {
   display: flex;
   gap: 10px;
-  margin: 16px 0;
+  margin-bottom: 6px;
   flex-wrap: wrap;
 }
 
 .option-chip {
-  padding: 6px 14px;
+  padding: 7px 16px;
   border-radius: 20px;
   border: 1px solid var(--border);
   background: transparent;
@@ -281,17 +319,18 @@ textarea:focus, input:focus {
   cursor: pointer;
   transition: all 0.2s;
   letter-spacing: 0.5px;
+  font-weight: 500;
 }
 
 .option-chip.active {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--glow);
+  box-shadow: 0 0 12px rgba(0,229,255,0.1);
 }
 
 .option-chip:hover:not(.active) { border-color: var(--muted); color: var(--text); }
 
-/* ── BUTTONS ── */
 .btn-primary {
   width: 100%;
   padding: 14px;
@@ -309,7 +348,7 @@ textarea:focus, input:focus {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 18px;
   position: relative;
   overflow: hidden;
 }
@@ -342,7 +381,6 @@ textarea:focus, input:focus {
 
 .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
-/* ── LOADER ── */
 .loader {
   display: none;
   text-align: center;
@@ -373,7 +411,6 @@ textarea:focus, input:focus {
   100% { margin-left: 130%; }
 }
 
-/* ── RESULT ── */
 .result-box {
   display: none;
   margin-top: 20px;
@@ -416,12 +453,12 @@ textarea:focus, input:focus {
 .result-body {
   padding: 20px;
   font-size: 14px;
-  line-height: 1.8;
+  line-height: 1.9;
   color: var(--text);
   white-space: pre-wrap;
+  letter-spacing: 0.3px;
 }
 
-/* ── COMPARE LAYOUT ── */
 .split {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -434,7 +471,6 @@ textarea:focus, input:focus {
   .hero h1 { letter-spacing: -1px; }
 }
 
-/* ── HISTORY ── */
 .history-list {
   display: flex;
   flex-direction: column;
@@ -483,7 +519,6 @@ textarea:focus, input:focus {
 
 .empty-state .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
 
-/* ── STATS ── */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -514,7 +549,6 @@ textarea:focus, input:focus {
   margin-top: 4px;
 }
 
-/* ── TOAST ── */
 .toast {
   position: fixed;
   bottom: 30px;
@@ -534,7 +568,6 @@ textarea:focus, input:focus {
 
 .toast.show { opacity:1; transform:translateY(0); }
 
-/* ── CHAR COUNTER ── */
 .compression-badge {
   display: inline-flex;
   align-items: center;
@@ -575,17 +608,17 @@ textarea:focus, input:focus {
 
 <div class="main">
 
-  <!-- ── SUMMARIZE PANEL ── -->
+  <!-- SUMMARIZE PANEL -->
   <div id="panel-summarize" class="panel active">
     <div class="card">
-      <div class="card-label">// Input Text</div>
+      <div class="card-label">Input Text</div>
       <textarea id="sumInput" placeholder="Paste your text here — articles, reports, papers, anything..."></textarea>
       <div class="meta-row">
         <span>Words: <b id="sumWords">0</b> &nbsp;|&nbsp; Chars: <b id="sumChars">0</b></span>
         <button class="btn-secondary" onclick="document.getElementById('sumInput').value=''; updateCount()">Clear</button>
       </div>
 
-      <div class="card-label" style="margin-top:18px;">// Summary Style</div>
+      <div class="section-title">Summary Style</div>
       <div class="options-row" id="styleChips">
         <button class="option-chip active" data-val="concise">Concise</button>
         <button class="option-chip" data-val="detailed">Detailed</button>
@@ -594,7 +627,7 @@ textarea:focus, input:focus {
         <button class="option-chip" data-val="tweet">Tweet-size</button>
       </div>
 
-      <div class="card-label" style="margin-top:14px;">// Output Language</div>
+      <div class="section-title">Output Language</div>
       <div class="options-row" id="langChips">
         <button class="option-chip active" data-val="English">English</button>
         <button class="option-chip" data-val="Tamil">Tamil</button>
@@ -606,7 +639,7 @@ textarea:focus, input:focus {
       <button class="btn-primary" onclick="doSummarize()" id="sumBtn">
         ✦ Generate Summary
       </button>
-      <div id="sumStatus" style="font-size:11px;color:var(--muted);margin-top:6px;"></div>
+      <div id="sumStatus" style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center;"></div>
 
       <div class="loader" id="sumLoader">
         <div>Neural network processing...</div>
@@ -617,26 +650,26 @@ textarea:focus, input:focus {
         <div class="result-header">
           <div class="result-label">Summary Output</div>
           <div class="result-actions">
-  <div class="compression-badge" id="compressionBadge">⚡ 0% compression</div>
-  <button class="btn-secondary" onclick="copyResult('sumOutput')">Copy</button>
-  <button class="btn-secondary" onclick="downloadResult('sumOutput')">Download</button>
-  </div>
+            <div class="compression-badge" id="compressionBadge">⚡ 0% compression</div>
+            <button class="btn-secondary" onclick="copyResult('sumOutput')">Copy</button>
+            <button class="btn-secondary" onclick="downloadResult('sumOutput')">Download</button>
+          </div>
         </div>
         <div class="result-body" id="sumOutput"></div>
       </div>
     </div>
   </div>
 
-  <!-- ── ANALYZE PANEL ── -->
+  <!-- ANALYZE PANEL -->
   <div id="panel-analyze" class="panel">
     <div class="card">
-      <div class="card-label">// Text to Analyze</div>
+      <div class="card-label">Text to Analyze</div>
       <textarea id="anaInput" placeholder="Enter text to extract insights, tone, key points, entities..."></textarea>
       <div class="meta-row">
         <span>Words: <span id="anaWords">0</span></span>
       </div>
 
-      <div class="card-label" style="margin-top:18px;">// Analysis Type</div>
+      <div class="section-title">Analysis Type</div>
       <div class="options-row" id="anaChips">
         <button class="option-chip active" data-val="key-points">Key Points</button>
         <button class="option-chip" data-val="sentiment">Sentiment</button>
@@ -664,16 +697,16 @@ textarea:focus, input:focus {
     </div>
   </div>
 
-  <!-- ── COMPARE PANEL ── -->
+  <!-- COMPARE PANEL -->
   <div id="panel-compare" class="panel">
     <div class="card">
       <div class="split">
         <div>
-          <div class="card-label">// Text A</div>
+          <div class="card-label">Text A</div>
           <textarea id="cmpA" placeholder="First text or document..." style="min-height:160px;"></textarea>
         </div>
         <div>
-          <div class="card-label">// Text B</div>
+          <div class="card-label">Text B</div>
           <textarea id="cmpB" placeholder="Second text or document..." style="min-height:160px;"></textarea>
         </div>
       </div>
@@ -697,13 +730,12 @@ textarea:focus, input:focus {
     </div>
   </div>
 
-  <!-- ── HISTORY PANEL ── -->
+  <!-- HISTORY PANEL -->
   <div id="panel-history" class="panel">
     <div class="stats-grid" id="statsGrid"></div>
-
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <div class="card-label">// Session History</div>
+        <div class="card-label">Session History</div>
         <button class="btn-secondary" onclick="clearHistory()">Clear All</button>
       </div>
       <div class="history-list" id="historyList"></div>
@@ -718,7 +750,6 @@ textarea:focus, input:focus {
 const API = 'http://127.0.0.1:5000';
 let history = JSON.parse(localStorage.getItem("history") || "[]");
 
-// ── CHIP SELECTION ──
 document.querySelectorAll('.options-row').forEach(row => {
   row.querySelectorAll('.option-chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -732,7 +763,6 @@ function getChipVal(groupId) {
   return document.querySelector(`#${groupId} .active`)?.dataset.val || '';
 }
 
-// ── WORD COUNT ──
 const sumInput = document.getElementById('sumInput');
 const anaInput = document.getElementById('anaInput');
 
@@ -742,13 +772,11 @@ function updateCount() {
   document.getElementById('sumChars').textContent = v.length;
 }
 
-sumInput.addEventListener('input', updateCount);
 anaInput.addEventListener('input', () => {
   const v = anaInput.value;
   document.getElementById('anaWords').textContent = v.trim() ? v.trim().split(/\s+/).length : 0;
 });
 
-// ── TABS ──
 function switchTab(name, el) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -757,7 +785,6 @@ function switchTab(name, el) {
   if (name === 'history') renderHistory();
 }
 
-// ── API CALL ──
 async function callAPI(endpoint, body) {
   const res = await fetch(`${API}/${endpoint}`, {
     method: 'POST',
@@ -785,7 +812,6 @@ function showResult(id, text) {
   document.getElementById(id + 'Result').style.display = 'block';
 }
 
-// ── SUMMARIZE ──
 async function doSummarize() {
   const text = sumInput.value.trim();
   if (!text) return showToast('Please paste some text first');
@@ -793,16 +819,13 @@ async function doSummarize() {
   const style = getChipVal('styleChips');
   const lang = getChipVal('langChips');
 
-document.getElementById("sumStatus").textContent = "Processing...";
-showLoader('sum');
+  document.getElementById("sumStatus").textContent = "Processing...";
+  showLoader('sum');
   try {
     const data = await callAPI('summarize', { text, style, language: lang });
     showResult('sum', data.summary);
-
-    // compression ratio
     const ratio = Math.round((1 - data.summary.length / text.length) * 100);
     document.getElementById('compressionBadge').textContent = `⚡ ${Math.max(0, ratio)}% compression`;
-
     addHistory('summarize', text, data.summary, style);
     showToast('Summary generated!');
     document.getElementById("sumStatus").textContent = "Summary ready";
@@ -813,7 +836,6 @@ showLoader('sum');
   hideLoader('sum');
 }
 
-// ── ANALYZE ──
 async function doAnalyze() {
   const text = anaInput.value.trim();
   if (!text) return showToast('Please paste some text first');
@@ -831,7 +853,6 @@ async function doAnalyze() {
   hideLoader('ana');
 }
 
-// ── COMPARE ──
 async function doCompare() {
   const textA = document.getElementById('cmpA').value.trim();
   const textB = document.getElementById('cmpB').value.trim();
@@ -849,18 +870,9 @@ async function doCompare() {
   hideLoader('cmp');
 }
 
-// ── HISTORY ──
 function addHistory(type, input, output, meta) {
-  history.unshift({
-    type,
-    input: input.slice(0, 100),
-    output,
-    meta,
-    ts: Date.now()
-  });
-
+  history.unshift({ type, input: input.slice(0, 100), output, meta, ts: Date.now() });
   if (history.length > 20) history.pop();
-
   localStorage.setItem("history", JSON.stringify(history));
 }
 
@@ -875,7 +887,6 @@ function renderHistory() {
     <div class="stat-card"><div class="value" style="color:var(--accent2)">${anaCount}</div><div class="label">Analyses</div></div>
     <div class="stat-card"><div class="value" style="color:var(--accent3)">${cmpCount}</div><div class="label">Comparisons</div></div>
   `;
-
   const list = document.getElementById('historyList');
   if (!history.length) {
     list.innerHTML = '<div class="empty-state"><div class="icon">◎</div>No history yet. Start by summarizing some text.</div>';
@@ -908,7 +919,7 @@ function clearHistory() {
   renderHistory();
   showToast("History cleared");
 }
-// ── UTILS ──
+
 function copyResult(id) {
   navigator.clipboard.writeText(document.getElementById(id).textContent);
   showToast('Copied to clipboard!');
@@ -920,53 +931,32 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
+
 function downloadResult(id) {
   const text = document.getElementById(id).textContent;
-
-  if (!text) {
-    showToast("Nothing to download");
-    return;
-  }
-
+  if (!text) { showToast("Nothing to download"); return; }
   const blob = new Blob([text], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
   a.download = "summary.txt";
   a.click();
-
   URL.revokeObjectURL(url);
-
   showToast("Downloaded successfully");
 }
+
 renderHistory();
-// Disable summarize button when empty
+
 sumInput.addEventListener("input", () => {
   updateCount();
   document.getElementById("sumBtn").disabled = !sumInput.value.trim();
 });
 
-// initial state
 document.getElementById("sumBtn").disabled = true;
+
 sumInput.addEventListener("keydown", function(e){
-  if(e.ctrlKey && e.key === "Enter"){
-    doSummarize();
-  }
+  if(e.ctrlKey && e.key === "Enter") doSummarize();
 });
-const input = document.getElementById("inputText");
-const btn = document.getElementById("summarizeBtn");
-
-input.addEventListener("input", function () {
-    if (input.value.trim() === "") {
-        btn.disabled = true;
-    } else {
-        btn.disabled = false;
-    }
-});
-
-// disable initially
-btn.disabled = true;
 </script>
 </body>
 </html>

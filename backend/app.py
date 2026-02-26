@@ -65,23 +65,18 @@ def summarize():
         if text.strip() == "":
             return jsonify({"summary": "Text is empty"}), 400
 
-        completion = client.chat.completions.create(
-            model="llama3-8b-8192",
-            messages=[
-                {"role": "system", "content": "Summarize the following text clearly."},
-                {"role": "user", "content": text}
-            ]
-        )
+        style = data.get("style", "concise")
+        language = data.get("language", "English")
 
-        summary = completion.choices[0].message.content
+        instruction = STYLE_PROMPTS.get(style, STYLE_PROMPTS["concise"])
+        prompt = f"{instruction}\n\nPlease respond in {language}.\n\n{text}"
 
+        summary = call_llama(prompt)
         return jsonify({"summary": summary})
 
     except Exception as e:
         print(e)
         return jsonify({"summary": "Server error occurred"}), 500
-
-
 # ── ANALYZE ─────────────────────────────────────────────────────────────────
 
 ANALYSIS_PROMPTS = {
