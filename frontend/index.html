@@ -606,6 +606,7 @@ textarea:focus, input:focus {
       <button class="btn-primary" onclick="doSummarize()" id="sumBtn">
         ✦ Generate Summary
       </button>
+      <div id="sumStatus" style="font-size:11px;color:var(--muted);margin-top:6px;"></div>
 
       <div class="loader" id="sumLoader">
         <div>Neural network processing...</div>
@@ -792,7 +793,8 @@ async function doSummarize() {
   const style = getChipVal('styleChips');
   const lang = getChipVal('langChips');
 
-  showLoader('sum');
+document.getElementById("sumStatus").textContent = "Processing...";
+showLoader('sum');
   try {
     const data = await callAPI('summarize', { text, style, language: lang });
     showResult('sum', data.summary);
@@ -803,8 +805,10 @@ async function doSummarize() {
 
     addHistory('summarize', text, data.summary, style);
     showToast('Summary generated!');
+    document.getElementById("sumStatus").textContent = "Summary ready";
   } catch(e) {
     showToast('Error: ' + e.message);
+    document.getElementById("sumStatus").textContent = "Error occurred";
   }
   hideLoader('sum');
 }
@@ -937,6 +941,32 @@ function downloadResult(id) {
   showToast("Downloaded successfully");
 }
 renderHistory();
+// Disable summarize button when empty
+sumInput.addEventListener("input", () => {
+  updateCount();
+  document.getElementById("sumBtn").disabled = !sumInput.value.trim();
+});
+
+// initial state
+document.getElementById("sumBtn").disabled = true;
+sumInput.addEventListener("keydown", function(e){
+  if(e.ctrlKey && e.key === "Enter"){
+    doSummarize();
+  }
+});
+const input = document.getElementById("inputText");
+const btn = document.getElementById("summarizeBtn");
+
+input.addEventListener("input", function () {
+    if (input.value.trim() === "") {
+        btn.disabled = true;
+    } else {
+        btn.disabled = false;
+    }
+});
+
+// disable initially
+btn.disabled = true;
 </script>
 </body>
 </html>
