@@ -106,7 +106,7 @@ jobs:
         id: meta
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE_TAG="${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
+          IMAGE_TAG="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
 
           # Write to GitHub outputs (accessible by other jobs)
           echo "short-sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
@@ -386,7 +386,7 @@ jobs:
         id: docker-meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
             # Tag with short commit SHA (e.g. ai-text-summarizer:a1b2c3d)
             type=sha,prefix=,suffix=,format=short
@@ -430,7 +430,7 @@ jobs:
           echo "  DOCKER IMAGE BUILD VERIFICATION"
           echo "================================================================"
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE="${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}"
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
 
           echo "Checking image exists in local Docker daemon..."
           docker images | grep "${{ env.IMAGE_NAME }}" || true
@@ -453,7 +453,7 @@ jobs:
         run: |
           echo "Running quick smoke test — starting container..."
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE="${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}"
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
 
           # Start container in background with a dummy API key
           docker run -d \
@@ -512,15 +512,15 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       # ── Step 5.2 — Generate metadata again (fresh runner) ────
       - name: "🏷️ Generate Docker Image Metadata"
         id: docker-meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
             type=sha,prefix=,suffix=,format=short
             type=raw,value=latest,enable={{is_default_branch}}
@@ -563,19 +563,19 @@ jobs:
           echo "================================================================"
           echo ""
           echo "  Image Digest : ${{ steps.docker-push.outputs.digest }}"
-          echo "  Image Name   : ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}"
+          echo "  Image Name   : ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
           echo "  Tags pushed  :"
-          echo "    → ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
+          echo "    → ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          echo "    → ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
+          echo "    → ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
           echo ""
           echo "  To pull and run this image anywhere:"
           echo ""
-          echo "    docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
+          echo "    docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
           echo ""
           echo "    docker run -p 5000:5000 \\"
           echo "      -e GROQ_API_KEY=your_api_key_here \\"
-          echo "      ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
+          echo "      ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
           echo ""
           echo "  Then open: http://localhost:5000"
           echo "================================================================"
@@ -657,7 +657,7 @@ jobs:
             if [[ "${{ needs.stage-5-docker-push.result }}" == "success" ]]; then
               echo "  the Docker image has been pushed to DockerHub."
               echo ""
-              echo "  DockerHub: hub.docker.com/r/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}"
+              echo "  DockerHub: hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
             else
               echo "  Docker push was skipped (expected on Pull Requests)."
             fi
