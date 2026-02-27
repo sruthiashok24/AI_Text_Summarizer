@@ -128,11 +128,7 @@ http://localhost:5000
 docker pull sruthi23z272/ai-text-summarizer:latest
 
 
-
-docker run -d \
-  -p 5000:5000 \
-  -e GROQ_API_KEY=your_groq_api_key_here \
-  sruthi23z272/ai-text-summarizer:latest
+docker run -p 5000:5000 -e GROQ_API_KEY=YOUR_GROQ_API_KEY sruthi23z272/ai-text-summarizer:latest
 ```
 
 Then open: **http://localhost:5000** 🎉
@@ -179,10 +175,7 @@ Stage 6 → Pipeline Summary          : Full report of all stage results
 **Deployment command used on EC2:**
 ```bash
 docker pull sruthi23z272/ai-text-summarizer:latest
-docker run -d \
-  -p 5000:5000 \
-  -e GROQ_API_KEY=your_key \
-  sruthi23z272/ai-text-summarizer:latest
+docker run -p 5000:5000 -e GROQ_API_KEY=YOUR_GROQ_API_KEY sruthi23z272/ai-text-summarizer:latest
 ```
 
 ---
