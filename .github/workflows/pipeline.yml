@@ -44,6 +44,7 @@ env:
   PYTHON_VERSION: "3.11"
   IMAGE_NAME: "ai-text-summarizer"
   REGISTRY: "docker.io"
+  DOCKERHUB_USER: "sruthi23z272"
 
 jobs:
 
@@ -241,7 +242,7 @@ jobs:
         id: docker-meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+          images: sruthi23z272/${{ env.IMAGE_NAME }}
           tags: |
             type=sha,prefix=,suffix=,format=short
             type=raw,value=latest,enable={{is_default_branch}}
@@ -316,7 +317,7 @@ jobs:
         id: docker-meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+          images: sruthi23z272/${{ env.IMAGE_NAME }}
           tags: |
             type=sha,prefix=,suffix=,format=short
             type=raw,value=latest,enable={{is_default_branch}}
@@ -348,11 +349,11 @@ jobs:
           echo "  DOCKER IMAGE SUCCESSFULLY PUSHED TO DOCKERHUB"
           echo "================================================================"
           echo "  Image Digest : ${{ steps.docker-push.outputs.digest }}"
-          echo "  Image Name   : ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
+          echo "  Image Name   : sruthi23z272/${{ env.IMAGE_NAME }}"
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "  Tags pushed  :"
-          echo "    -> ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest"
-          echo "    -> ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
+          echo "    -> sruthi23z272/${{ env.IMAGE_NAME }}:latest"
+          echo "    -> sruthi23z272/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
           echo "================================================================"
 
 
@@ -411,7 +412,7 @@ jobs:
             echo "  PIPELINE RESULT: SUCCESS"
             if [[ "${{ needs.stage-5-docker-push.result }}" == "success" ]]; then
               echo "  Docker image pushed to DockerHub successfully."
-              echo "  DockerHub: hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
+              echo "  DockerHub: hub.docker.com/r/sruthi23z272/${{ env.IMAGE_NAME }}"
             else
               echo "  Docker push skipped (expected on Pull Requests)."
             fi
